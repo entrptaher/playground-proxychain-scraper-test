@@ -62,4 +62,8 @@ typings/
 .env
 
 # next.js build output
+<<<<<<< HEAD
 .next
+=======
+.next
+>>>>>>> 3e1cb88777b5996e1592169e096a3403c7cd8a77
