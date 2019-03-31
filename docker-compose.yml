@@ -5,3 +5,5 @@ services:
     environment:
       - DEBUG=proxy
       - PROXYCHAIN_PROXY=${PROXYCHAIN_PROXY}
+    volumes:
+      - './screenshots:/app/screenshots'
