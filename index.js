@@ -1,4 +1,4 @@
-const spawnProxy = require("./spawn");
+const spawnProxy = require("./spawn-proxy");
 const scraper = require("./scraper");
 
 spawnProxy().then(async proxy=>{

@@ -1,9 +1,11 @@
-var debug = require('debug')('proxy');
-var spawn = require("child_process").spawn;
-var which = require("npm-which")(process.cwd());
-var anyproxyPath = which.sync("anyproxy");
-const fs = require("fs");
 require("dotenv").config();
+const debug = require('debug')('proxy');
+const fs = require("fs");
+const spawn = require("child_process").spawn;
+const which = require("npm-which")(process.cwd());
+
+const anyproxyPath = which.sync("anyproxy");
+const ANYPROXY_PORT = process.env.ANYPROXY_PORT || 8001;
 
 async function writeConfig() {
   const pre = `random_chain
@@ -16,7 +18,7 @@ async function writeConfig() {
   `;
 
   const proxies = Object.entries(process.env)
-    .filter(([key]) => key.includes("PROXY"))
+    .filter(([key]) => key.includes("PROXYCHAIN_PROXY"))
     .map(([key, value]) => value)
     .join("\n");
 
@@ -25,7 +27,7 @@ async function writeConfig() {
 
 function runProxy() {
   return new Promise(resolve => {
-    var child = spawn("proxychains4", ["-f", "custom.conf", anyproxyPath]);
+    var child = spawn("proxychains4", ["-f", "custom.conf", anyproxyPath, "--port", ANYPROXY_PORT]);
 
     child.stdout.on("data", function(data) {
       debug("stdout: " + data);
@@ -74,7 +76,7 @@ function runProxy() {
     process.on("SIGUSR2", exitHandler.bind(null, { exit: true }));
 
     //catches uncaught exceptions
-    process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
+    process.on("uncaughtException", exitHandler.bind(null, { error: true, exit: true }));
   });
 }
 
