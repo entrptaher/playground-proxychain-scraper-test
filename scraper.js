@@ -3,7 +3,7 @@ const port = process.env.ANYPROXY_PORT || 8001;
 
 async function scraper() {
   const browser = await puppeteer.launch({
-    // args: [`--proxy-server=127.0.0.1:${port}`]
+    args: [`--proxy-server=127.0.0.1:${port}`]
   });
 
   const page = await browser.newPage();
