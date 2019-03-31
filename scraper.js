@@ -16,7 +16,9 @@ async function scraper() {
 
   console.log(content);
 
-  await page.screenshot({ path: "screenshots/screenshot.png", fullPage: true });
+  if(process.env.SAVE_SCREENSHOT){
+    await page.screenshot({ path: "screenshots/screenshot.png", fullPage: true });
+  }
 
   await browser.close();
 }
