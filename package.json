@@ -5,7 +5,9 @@
   "license": "MIT",
   "dependencies": {
     "anyproxy": "^4.1.0",
+    "debug": "^4.1.1",
     "dotenv": "^7.0.0",
+    "execa": "^1.0.0",
     "get-installed-path": "^4.0.8",
     "npm-which": "^3.0.1",
     "puppeteer": "^1.14.0"

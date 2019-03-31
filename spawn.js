@@ -1,3 +1,4 @@
+var debug = require('debug')('proxy');
 var spawn = require("child_process").spawn;
 var which = require("npm-which")(process.cwd());
 var anyproxyPath = which.sync("anyproxy");
@@ -22,53 +23,64 @@ async function writeConfig() {
   await fs.writeFileSync("custom.conf", pre + proxies);
 }
 
-async function runProxy() {
-  var child = spawn("proxychains4", ["-f", "custom.conf", anyproxyPath]);
+function runProxy() {
+  return new Promise(resolve => {
+    var child = spawn("proxychains4", ["-f", "custom.conf", anyproxyPath]);
 
-  child.stdout.on("data", function(data) {
-    console.log("stdout: " + data);
-    //Here is where the output goes
+    child.stdout.on("data", function(data) {
+      debug("stdout: " + data);
+      //Here is where the output goes
+      if (data.includes("proxy started")) {
+        resolve(child);
+      }
+    });
+
+    child.stderr.on("data", function(data) {
+      debug("stderr: " + data);
+      //Here is where the error output goes
+      if (data.includes("proxy started")) {
+        resolve(child);
+      }
+    });
+
+    child.on("close", function(code) {
+      debug("closing code: " + code);
+      //Here you can get the exit code of the script
+    });
+
+    /**
+     * Child process cleaner
+     * https://stackoverflow.com/a/14032965/6161265
+     */
+
+    //so the program will not close instantly
+    // process.stdin.resume(); 
+
+    function exitHandler(options, exitCode) {
+      child.kill();
+      if (options.cleanup) debug("clean");
+      if (exitCode || exitCode === 0) debug(exitCode);
+      if (options.exit) process.exit();
+    }
+
+    //do something when app is closing
+    process.on("exit", exitHandler.bind(null, { cleanup: true }));
+
+    //catches ctrl+c event
+    process.on("SIGINT", exitHandler.bind(null, { exit: true }));
+
+    // catches "kill pid" (for example: nodemon restart)
+    process.on("SIGUSR1", exitHandler.bind(null, { exit: true }));
+    process.on("SIGUSR2", exitHandler.bind(null, { exit: true }));
+
+    //catches uncaught exceptions
+    process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
   });
-
-  child.stderr.on("data", function(data) {
-    console.log("stderr: " + data);
-    //Here is where the error output goes
-  });
-
-  child.on("close", function(code) {
-    console.log("closing code: " + code);
-    //Here you can get the exit code of the script
-  });
-
-  /**
-   * Child process cleaner
-   * https://stackoverflow.com/a/14032965/6161265
-   */
-
-  process.stdin.resume(); //so the program will not close instantly
-
-  function exitHandler(options, exitCode) {
-    child.kill();
-    if (options.cleanup) console.log("clean");
-    if (exitCode || exitCode === 0) console.log(exitCode);
-    if (options.exit) process.exit();
-  }
-
-  //do something when app is closing
-  process.on("exit", exitHandler.bind(null, { cleanup: true }));
-
-  //catches ctrl+c event
-  process.on("SIGINT", exitHandler.bind(null, { exit: true }));
-
-  // catches "kill pid" (for example: nodemon restart)
-  process.on("SIGUSR1", exitHandler.bind(null, { exit: true }));
-  process.on("SIGUSR2", exitHandler.bind(null, { exit: true }));
-
-  //catches uncaught exceptions
-  process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
 }
 
-(async () => {
+async function setup() {
   await writeConfig();
-  await runProxy();
-})();
+  return runProxy();
+}
+
+module.exports = setup;
