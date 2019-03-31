@@ -23,10 +23,7 @@ async function writeConfig() {
 
   const proxies = [].concat.apply([], proxyArr).join("\n");
 
-  console.log(proxies);
   await fs.writeFileSync("custom.conf", `${pre}${proxies}`, "utf-8");
-  const contents = fs.readFileSync("custom.conf", "utf-8");
-  console.log(contents);
 }
 
 function runProxy() {
