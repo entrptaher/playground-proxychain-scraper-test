@@ -9,15 +9,24 @@ const anyproxyPath = which.sync("anyproxy");
 const ANYPROXY_PORT = process.env.ANYPROXY_PORT || 8001;
 
 async function writeConfig() {
-  const pre = fs.readFileSync('./proxy-prefix.conf') + '\n';
+  const pre = fs.readFileSync("./proxy-prefix.conf") + "\n";
 
   const proxyArr = Object.entries(process.env)
     .filter(([key]) => key.includes("PROXYCHAIN_PROXY"))
-    .map(([key, value]) => value.split(/[\n,;]+/));
+    .map(([key, value]) =>
+      value
+        .trim()
+        // remove leading quotes if docker-compose adds them
+        .replace(/^"(.*)"$/, "$1")
+        .split(/[\n,;]+/gm)
+    );
 
   const proxies = [].concat.apply([], proxyArr).join("\n");
 
-  await fs.writeFileSync("custom.conf", pre + proxies);
+  console.log(proxies);
+  await fs.writeFileSync("custom.conf", `${pre}${proxies}`, "utf-8");
+  const contents = fs.readFileSync("custom.conf", "utf-8");
+  console.log(contents);
 }
 
 function runProxy() {
