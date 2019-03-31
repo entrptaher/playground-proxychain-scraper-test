@@ -1,5 +1,6 @@
 require("dotenv").config();
-const debug = require('debug')('proxy');
+
+const debug = require("debug")("proxy");
 const fs = require("fs");
 const spawn = require("child_process").spawn;
 const which = require("npm-which")(process.cwd());
@@ -8,26 +9,26 @@ const anyproxyPath = which.sync("anyproxy");
 const ANYPROXY_PORT = process.env.ANYPROXY_PORT || 8001;
 
 async function writeConfig() {
-  const pre = `random_chain
-  quiet_mode
-  proxy_dns
-  tcp_read_time_out 15000
-  tcp_connect_time_out 8000
-  
-  [ProxyList]
-  `;
+  const pre = fs.readFileSync('./proxy-prefix.conf') + '\n';
 
-  const proxies = Object.entries(process.env)
+  const proxyArr = Object.entries(process.env)
     .filter(([key]) => key.includes("PROXYCHAIN_PROXY"))
-    .map(([key, value]) => value)
-    .join("\n");
+    .map(([key, value]) => value.split(/[\n,;]+/));
+
+  const proxies = [].concat.apply([], proxyArr).join("\n");
 
   await fs.writeFileSync("custom.conf", pre + proxies);
 }
 
 function runProxy() {
   return new Promise(resolve => {
-    var child = spawn("proxychains4", ["-f", "custom.conf", anyproxyPath, "--port", ANYPROXY_PORT]);
+    var child = spawn("proxychains4", [
+      "-f",
+      "custom.conf",
+      anyproxyPath,
+      "--port",
+      ANYPROXY_PORT
+    ]);
 
     child.stdout.on("data", function(data) {
       debug("stdout: " + data);
@@ -56,7 +57,7 @@ function runProxy() {
      */
 
     //so the program will not close instantly
-    // process.stdin.resume(); 
+    // process.stdin.resume();
 
     function exitHandler(options, exitCode) {
       child.kill();
@@ -76,7 +77,10 @@ function runProxy() {
     process.on("SIGUSR2", exitHandler.bind(null, { exit: true }));
 
     //catches uncaught exceptions
-    process.on("uncaughtException", exitHandler.bind(null, { error: true, exit: true }));
+    process.on(
+      "uncaughtException",
+      exitHandler.bind(null, { error: true, exit: true })
+    );
   });
 }
 
